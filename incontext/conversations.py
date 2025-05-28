@@ -26,24 +26,42 @@ def index():
 def create():
     if request.method == 'POST':
         name = request.form['name']
+        agent_id = request.form['agent']
         error = None
 
         if not name:
             error = 'Name is required.'
+        
+        if not agent_id:
+            error = 'Agent is required.'
 
         if error is not None:
             flash(error)
         else:
             db = get_db()
-            db.execute(
+            cur = db.cursor()
+            cur.execute(
                 'INSERT INTO conversations (name, creator_id)'
                 ' VALUES (?, ?)',
                 (name, g.user['id'])
             )
+            conversation_id = cur.lastrowid
+            cur.execute(
+                'INSERT INTO conversation_agent_relations(conversation_id, agent_id)'
+                ' VALUES (?, ?)',
+                (conversation_id, agent_id)
+            )
             db.commit()
             return redirect(url_for('conversations.index'))
-
-    return render_template('conversations/create.html')
+    else:
+        # You need to get all of this user's agents
+        agents = get_db().execute(
+            'SELECT a.id, name'
+            ' FROM agents a JOIN users u ON a.creator_id = u.id'
+            ' WHERE u.id = ?',
+            (g.user['id'],)
+        ).fetchall()
+        return render_template('conversations/create.html', agents=agents)
 
 def get_conversation(id, check_creator=True):
     conversation = get_db().execute(
