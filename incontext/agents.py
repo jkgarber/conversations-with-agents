@@ -9,7 +9,7 @@ from incontext.db import get_db
 bp = Blueprint('agents', __name__, url_prefix='/agents')
 
 @bp.route('/')
-# @login_required
+@login_required
 def index():
     db = get_db()
     agents = db.execute(

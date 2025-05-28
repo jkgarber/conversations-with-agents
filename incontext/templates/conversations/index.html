@@ -19,9 +19,9 @@
 					<p>Created: {{ conversation['created'].strftime('%d.%m.%Y') }} | Creator: {{ conversation['username'] }} | <a href="{{ url_for('conversations.update', id=conversation['id']) }}">Edit</a></p>
 				</footer>
 			</article>
-		{% if not loop.last %}
-			<hr>
-		{% endif %}
+			{% if not loop.last %}
+				<hr>
+			{% endif %}
 		{% endif %}
 	{% endfor %}
 {% endblock %}
