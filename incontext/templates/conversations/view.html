@@ -6,6 +6,15 @@
 	
 {% block main %}
 <article class="conversation">
+	<section id="agent">
+		<h2>Agent</h2>
+		<ul>
+			<li>Name: {{ agent['name'] }}</li>
+			<li>Model: {{ agent['model'] }}</li>
+			<li>Role: {{ agent['role'] }}</li>
+			<li>Instructions: {{ agent['instructions'] }}</li>
+		</ul>
+	</section>
 	<section id="messages">
 		<h2>Messages</h2>
 		{% if messages|length == 0 %}

@@ -118,12 +118,26 @@ def delete(id):
     delete_messages(id)
     return redirect(url_for('conversations.index'))
 
+
+def get_related_agent(conversation_id):
+    agent = get_db().execute(
+        'SELECT a.name, a.model, a.role, a.instructions'
+        ' FROM agents a'
+        ' JOIN conversation_agent_relations r ON r.agent_id = a.id'
+        ' WHERE r.conversation_id = ?',
+        (conversation_id,)
+    ).fetchone()
+
+    return agent
+
+
 @bp.route('/<int:id>', methods=('GET',))
 @login_required
 def view(id):
     conversation = get_conversation(id)
+    agent = get_related_agent(id)
     messages = get_messages(id)
-    return render_template('conversations/view.html', conversation=conversation, messages=messages)
+    return render_template('conversations/view.html', conversation=conversation, agent=agent, messages=messages)
 
 
 def get_messages(conversation_id):
