@@ -15,9 +15,12 @@ bp = Blueprint('conversations', __name__, url_prefix='/conversations')
 def index():
     db = get_db()
     conversations = db.execute(
-        'SELECT c.id, name, created, creator_id, username'
-        ' FROM conversations c JOIN users u ON c.creator_id = u.id'
-        ' ORDER BY created DESC'
+        'SELECT c.id, c.name, c.created, c.creator_id, u.username, a.name as agent'
+        ' FROM conversations c'
+        ' JOIN users u ON c.creator_id = u.id'
+        ' JOIN conversation_agent_relations r ON c.id = r.conversation_id'
+        ' JOIN agents a ON r.agent_id = a.id'
+        ' ORDER BY c.created DESC'
     ).fetchall()
     return render_template('conversations/index.html', conversations=conversations)
 
