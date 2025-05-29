@@ -5,6 +5,7 @@ from werkzeug.exceptions import abort
 
 from incontext.auth import login_required
 from incontext.db import get_db
+from incontext.agents import get_agents
 from openai import OpenAI
 import os
 
@@ -57,19 +58,15 @@ def create():
             db.commit()
             return redirect(url_for('conversations.index'))
     else:
-        # You need to get all of this user's agents
-        agents = get_db().execute(
-            'SELECT a.id, name'
-            ' FROM agents a JOIN users u ON a.creator_id = u.id'
-            ' WHERE u.id = ?',
-            (g.user['id'],)
-        ).fetchall()
+        agents = get_agents()
         return render_template('conversations/create.html', agents=agents)
 
 def get_conversation(id, check_creator=True):
     conversation = get_db().execute(
-        'SELECT c.id, name, created, creator_id, username'
-        ' FROM conversations c JOIN users u ON c.creator_id = u.id'
+        'SELECT c.id, name, created, creator_id, username, r.agent_id as agent_id'
+        ' FROM conversations c'
+        ' JOIN users u ON c.creator_id = u.id'
+        ' JOIN conversation_agent_relations r ON c.id = r.conversation_id'
         ' WHERE c.id = ?',
         (id,)
     ).fetchone()
@@ -89,10 +86,14 @@ def update(id):
 
     if request.method == 'POST':
         name = request.form['name']
+        agent_id = request.form['agent']
         error = None
 
         if not name:
             error = 'Name is required.'
+
+        if not agent_id:
+            error = 'Agent is required.'
 
         if error is not None:
             flash(error)
@@ -103,10 +104,16 @@ def update(id):
                 ' WHERE id = ?',
                 (name, id)
             )
+            db.execute(
+                'UPDATE conversation_agent_relations SET agent_id = ?'
+                ' WHERE conversation_id = ?',
+                (agent_id, id)
+            )
             db.commit()
             return redirect(url_for('conversations.index'))
-    
-    return render_template('conversations/update.html', conversation=conversation)
+    else:
+        agents = get_agents()
+        return render_template('conversations/update.html', conversation=conversation, agents=agents)
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
@@ -127,7 +134,6 @@ def get_related_agent(conversation_id):
         ' WHERE r.conversation_id = ?',
         (conversation_id,)
     ).fetchone()
-
     return agent
 
 

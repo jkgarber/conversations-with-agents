@@ -16,7 +16,9 @@
 		<label for="agent">Agent
 			<select name="agent" id="agent" required>
 				{% for agent in agents %}
+				{% if g.user['id'] == agent['creator_id'] %}
 				<option value="{{ agent['id'] }}">{{ agent['name'] }}</option>
+				{% endif %}
 				{% endfor %}
 			</select>
 		</label>

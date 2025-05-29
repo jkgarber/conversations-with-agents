@@ -8,15 +8,20 @@ from incontext.db import get_db
 
 bp = Blueprint('agents', __name__, url_prefix='/agents')
 
-@bp.route('/')
-@login_required
-def index():
+def get_agents():
     db = get_db()
     agents = db.execute(
         'SELECT a.id, model, name, role, instructions, created, creator_id, username'
         ' FROM agents a JOIN users u ON a.creator_id = u.id'
         ' ORDER BY created DESC'
     ).fetchall()
+    return agents
+
+
+@bp.route('/')
+@login_required
+def index():
+    agents = get_agents()
     return render_template('agents/index.html', agents=agents)
 
 @bp.route('/create', methods=('GET', 'POST'))
