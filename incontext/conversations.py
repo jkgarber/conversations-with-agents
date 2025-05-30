@@ -121,6 +121,7 @@ def delete(id):
     get_conversation(id)
     db = get_db()
     db.execute('DELETE FROM conversations WHERE id = ?', (id,))
+    db.execute('DELETE FROM conversation_agent_relations WHERE conversation_id = ?', (id,))
     db.commit()
     delete_messages(id)
     return redirect(url_for('conversations.index'))
