@@ -49,3 +49,11 @@ input {
 p.human-1 {
 	color: darkgreen;
 }
+
+.flash-message {
+	color: blue;
+}
+
+.flash-error {
+	color: red;
+}

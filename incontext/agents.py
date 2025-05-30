@@ -99,8 +99,15 @@ def update(id): # id corresponds to the <int:id> in the route. Flask will captur
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
 def delete(id):
-    get_agent(id)
     db = get_db()
-    db.execute('DELETE FROM agents WHERE id = ?', (id,))
-    db.commit()
-    return redirect(url_for('agents.index'))
+    relations = db.execute(
+        'SELECT COUNT(id) FROM conversation_agent_relations WHERE agent_id = ?', (id,)
+    ).fetchone()
+    n = relations[0]
+    if n > 0:
+        flash(f'Cannot delete this agent as it is linked to {n} conversation(s).', 'error')
+        return redirect(url_for('agents.update', id=id))
+    else:
+        db.execute('DELETE FROM agents WHERE id = ?', (id,))
+        db.commit()
+        return redirect(url_for('agents.index'))

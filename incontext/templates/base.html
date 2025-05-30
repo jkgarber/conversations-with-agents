@@ -36,8 +36,8 @@
 			<header>
 				{% block header %}{% endblock %}
 			</header>
-			{% for message in get_flashed_messages() %} <!-- shows any error messages -->
-				<p class="flash">{{ message }}</p>
+			{% for category, message in get_flashed_messages(with_categories=True) %} <!-- shows any error messages -->
+			<p class="flash-{{ category }}">{{ message }}</p>
 			{% endfor %}
 			{% block main %}{% endblock %}
 		</main>
