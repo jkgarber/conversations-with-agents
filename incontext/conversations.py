@@ -6,6 +6,7 @@ from werkzeug.exceptions import abort
 from incontext.auth import login_required
 from incontext.db import get_db
 from incontext.agents import get_agents
+from incontext.agents import get_agent
 from openai import OpenAI
 import os
 
@@ -179,7 +180,19 @@ def get_credential(name):
 
 def get_agent_response(cid):
     messages = get_messages(cid)
-    conversation_history = [dict(role='system', content='You are a helpful assistant.')]
+    agent_id = get_db().execute(
+        'SELECT r.agent_id FROM conversation_agent_relations r'
+        ' JOIN conversations c ON r.conversation_id = c.id'
+        ' WHERE r.conversation_id = ?',
+        (cid,)
+    ).fetchone()['agent_id']
+    agent = get_agent(agent_id)
+    conversation_history = [
+        dict(
+            role='system',
+            content=f'You are a {agent["role"]}. {agent["instructions"]}',
+        )
+    ]
     for message in messages:
         human = message['human']
         role = 'user' if human == 1 else 'assistant'
@@ -190,7 +203,7 @@ def get_agent_response(cid):
     client = OpenAI(api_key=openai_api_key)
     try:
         response = client.responses.create(
-            model='gpt-4.1-mini',
+            model=agent['model'],
             input=conversation_history
         )
         return dict(success=True, content=response.output_text)
