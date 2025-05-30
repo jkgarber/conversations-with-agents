@@ -10,15 +10,28 @@
 {% block main %}
 	{% for agent in agents %}
 		{% if g.user['id'] == agent['creator_id'] %}
-			<article class="agent-card">
+		<article class="agent-card" data-agent-id="{{ agent['id'] }}">
 				<header>
 					<h2>{{ agent['name'] }}</h2>
 				</header>
-				<ul>
-					<li><b>Model:</b> {{ agent['model'] }}</li>
-					<li><b>Role:</b> {{ agent['role'] }}</li>
-					<li><b>Instructions:</b> {{ agent['instructions']}}</li>
-				</ul>
+				<section>
+					<h3>Config</h3>
+					<ul>
+						<li><b>Model:</b> {{ agent['model'] }}</li>
+						<li><b>Role:</b> {{ agent['role'] }}</li>
+						<li><b>Instructions:</b> {{ agent['instructions']}}</li>
+					</ul>
+				</section>
+				<section id="related-conversations">
+					<h3>Conversations</h3>
+					<ul>
+						{% for conversation in creator_conversations %}
+						{% if conversation['agent_id'] == agent['id'] %}
+						<li><a href="{{ url_for('conversations.view', id=conversation['conversation_id']) }}">{{ conversation['name'] }}</a></li>
+						{% endif %}
+						{% endfor %}
+					</ul>
+				</section>
 				<footer>
 					<p>Created: {{ agent['created'].strftime('%d.%m.%Y') }} | Creator: {{ agent['username'] }}{% if g.user['id'] == agent['creator_id'] %} | <a href="{{ url_for('agents.update', id=agent['id']) }}">Edit</a>{% endif %}</p>
 				</footer>

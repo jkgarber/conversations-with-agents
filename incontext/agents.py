@@ -18,11 +18,26 @@ def get_agents():
     return agents
 
 
+def get_creator_conversations():
+    user_id = g.user['id']
+    db = get_db()
+    conversations = db.execute(
+        'SELECT r.agent_id, r.conversation_id, c.name'
+        ' FROM conversation_agent_relations r'
+        ' JOIN conversations c ON r.conversation_id = c.id'
+        ' WHERE c.creator_id = ?',
+        (user_id,)
+    ).fetchall()
+    return conversations
+
+
 @bp.route('/')
 @login_required
 def index():
     agents = get_agents()
-    return render_template('agents/index.html', agents=agents)
+    creator_conversations = get_creator_conversations()
+    return render_template('agents/index.html', agents=agents, creator_conversations=creator_conversations)
+
 
 @bp.route('/create', methods=('GET', 'POST'))
 @login_required
