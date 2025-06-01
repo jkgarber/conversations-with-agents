@@ -34,14 +34,12 @@ def create():
         agent_id = request.form['agent']
         error = None
 
-        if not name:
-            error = 'Name is required.'
+        if not name or not agent_id:
+            error = 'Name and agent are required.'
         
-        if not agent_id:
-            error = 'Agent is required.'
-
         if error is not None:
-            flash(error)
+            print(f'Error: {error}')
+            flash(error) 
         else:
             db = get_db()
             cur = db.cursor()
@@ -58,9 +56,9 @@ def create():
             )
             db.commit()
             return redirect(url_for('conversations.index'))
-    else:
-        agents = get_agents()
-        return render_template('conversations/create.html', agents=agents)
+    
+    agents = get_agents()
+    return render_template('conversations/create.html', agents=agents)
 
 def get_conversation(id, check_creator=True):
     conversation = get_db().execute(
@@ -90,11 +88,8 @@ def update(id):
         agent_id = request.form['agent']
         error = None
 
-        if not name:
-            error = 'Name is required.'
-
-        if not agent_id:
-            error = 'Agent is required.'
+        if not name or not agent_id:
+            error = 'Name and agent are required.'
 
         if error is not None:
             flash(error)
@@ -112,9 +107,9 @@ def update(id):
             )
             db.commit()
             return redirect(url_for('conversations.index'))
-    else:
-        agents = get_agents()
-        return render_template('conversations/update.html', conversation=conversation, agents=agents)
+
+    agents = get_agents()
+    return render_template('conversations/update.html', conversation=conversation, agents=agents)
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
