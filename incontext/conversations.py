@@ -8,6 +8,7 @@ from incontext.db import get_db
 from incontext.agents import get_agents
 from incontext.agents import get_agent
 from openai import OpenAI
+import anthropic
 import os
 
 bp = Blueprint('conversations', __name__, url_prefix='/conversations')
@@ -38,7 +39,6 @@ def create():
             error = 'Name and agent are required.'
         
         if error is not None:
-            print(f'Error: {error}')
             flash(error) 
         else:
             db = get_db()
@@ -173,27 +173,13 @@ def get_credential(name):
             return credential
 
 
-def get_agent_response(cid):
-    messages = get_messages(cid)
-    agent_id = get_db().execute(
-        'SELECT r.agent_id FROM conversation_agent_relations r'
-        ' JOIN conversations c ON r.conversation_id = c.id'
-        ' WHERE r.conversation_id = ?',
-        (cid,)
-    ).fetchone()['agent_id']
-    agent = get_agent(agent_id)
+def get_openai_response(conversation_history, agent):
     conversation_history = [
         dict(
             role='system',
             content=f'You are a {agent["role"]}. {agent["instructions"]}',
         )
-    ]
-    for message in messages:
-        human = message['human']
-        role = 'user' if human == 1 else 'assistant'
-        content = message['content']
-        conversation_history.append(dict(role=role, content=content))
-    
+    ] + conversation_history
     openai_api_key = get_credential('OPENAI_API_KEY')
     client = OpenAI(api_key=openai_api_key)
     try:
@@ -203,9 +189,52 @@ def get_agent_response(cid):
         )
         return dict(success=True, content=response.output_text)
     except Exception as e:
-        return dict(success=False, content=e)
-    
+        return dict(success=False, content=e)    
 
+
+def get_anthropic_response(conversation_history, agent):
+    conversation_history = [
+        dict(
+            role='user',
+            content=agent['instructions']
+        )
+    ] + conversation_history
+    anthropic_api_key = get_credential('ANTHROPIC_API_KEY')
+    client = anthropic.Anthropic(api_key=anthropic_api_key)
+    try:
+        response = client.messages.create(
+            model=agent['model'],
+            max_tokens=1024,
+            system=f'You are a {agent["role"]}.',
+            messages=conversation_history
+        )
+        return dict(success=True, content=response.content[0].text)
+    except Exception as e:
+        return dict(success=False, content=e)
+
+
+def get_agent_response(cid):
+    conversation_history = []
+    messages = get_messages(cid)
+    for message in messages:
+        human = message['human']
+        role = 'user' if human == 1 else 'assistant'
+        content = message['content']
+        conversation_history.append(dict(role=role, content=content))
+    agent_id = get_db().execute(
+        'SELECT r.agent_id FROM conversation_agent_relations r'
+        ' JOIN conversations c ON r.conversation_id = c.id'
+        ' WHERE r.conversation_id = ?',
+        (cid,)
+    ).fetchone()['agent_id']
+    agent = get_agent(agent_id)
+    vendor = agent['vendor']
+    if vendor == 'openai':
+        return get_openai_response(conversation_history, agent)
+    else:
+        return get_anthropic_response(conversation_history, agent)
+
+    
 @bp.route('/<int:conversation_id>/add-message', methods=('POST',))
 @login_required
 def add_message(conversation_id):
@@ -245,4 +274,4 @@ def agent_response(conversation_id):
         return {'content': agent_response['content']}, 200
     else:
         # print(agent_response['content']) # Log the error
-        return 'The Agent\'s API returned an error.', 200
+        return {'content': f'An error occurred in get_agent_response: {agent_response["content"]}'}, 200

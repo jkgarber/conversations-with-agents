@@ -55,11 +55,15 @@ def create():
         if error is not None:
             flash(error)
         else:
+            if model in ['gpt-4.1-mini', 'gpt-4.1']:
+                vendor = 'openai'
+            else:
+                vendor = 'anthropic'
             db = get_db()
             db.execute(
-                'INSERT INTO agents (model, name, role, instructions, creator_id)'
-                ' VALUES (?, ?, ?, ?, ?)',
-                (model, name, role, instructions, g.user['id'])
+                'INSERT INTO agents (model, name, role, instructions, creator_id, vendor)'
+                ' VALUES (?, ?, ?, ?, ?, ?)',
+                (model, name, role, instructions, g.user['id'], vendor)
             )
             db.commit()
             return redirect(url_for('agents.index'))
@@ -68,7 +72,7 @@ def create():
 
 def get_agent(id, check_creator=True): # The check_author parameter means this function is also useful for getting the context in general, not just for the update view e.g. displaying a single context on a "view context" page.
     agent = get_db().execute(
-        'SELECT a.id, model, name, role, instructions, created, creator_id, username'
+        'SELECT a.id, model, name, role, instructions, created, creator_id, username, a.vendor'
         ' FROM agents a JOIN users u ON a.creator_id = u.id'
         ' WHERE a.id = ?',
         (id,)
@@ -100,11 +104,15 @@ def update(id): # id corresponds to the <int:id> in the route. Flask will captur
         if error is not None:
             flash(error)
         else:
+            if model in ['gpt-4.1-mini', 'gpt-4.1']:
+                vendor = 'openai'
+            else:
+                vendor = 'anthropic'
             db = get_db()
             db.execute(
-                'UPDATE agents SET model = ?, name = ?, role = ?, instructions = ?'
+                'UPDATE agents SET model = ?, name = ?, role = ?, instructions = ?, vendor = ?'
                 ' WHERE id = ?',
-                (model, name, role, instructions, id)
+                (model, name, role, instructions, vendor, id)
             )
             db.commit()
             return redirect(url_for('agents.index'))

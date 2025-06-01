@@ -35,6 +35,7 @@ CREATE TABLE agents (
 	name TEXT NOT NULL,
 	role TEXT NOT NULL,
 	instructions TEXT NOT NULL,
+	vendor TEXT NOT NULL,
 	FOREIGN KEY (creator_id) REFERENCES users (id)
 );
 

@@ -75,11 +75,12 @@ def test_create(client, auth, app):
     assert client.get('agents/create').status_code == 200
 
     response = client.post('agents/create', data={'model': 'gpt-4.1-mini', 'name': 'Test 1', 'role': 'Testing Agent', 'instructions': 'Reply with one word: "Working".'})
+    response = client.post('agents/create', data={'model': 'claude-3-5-haiku-latest', 'name': 'Test 2', 'role': 'Testing Agent', 'instructions': 'Reply with one word: "Working".'})
 
     with app.app_context():
         db = get_db()
         count = db.execute('SELECT COUNT(id) FROM agents').fetchone()[0]
-        assert count == 2
+        assert count == 3
     
 
 def test_update(client, auth, app):
@@ -87,11 +88,20 @@ def test_update(client, auth, app):
     assert client.get('agents/1/update').status_code == 200
     
     client.post('/agents/1/update', data={'model': 'gpt-4.1', 'name': 'Test 1', 'role': 'Testing Agent', 'instructions': 'Reply with one word: "Working".'})
-
     with app.app_context():
         db = get_db()
         agent = db.execute('SELECT * FROM agents WHERE id = 1').fetchone()
         assert agent['model'] == 'gpt-4.1'
+        assert agent['name'] == 'Test 1'
+        assert agent['role'] == 'Testing Agent'
+        assert agent['instructions'] == 'Reply with one word: "Working".'
+    
+    client.post('/agents/1/update', data={'vendor': 'anthropic', 'model': 'claude-3-5-haiku-latest', 'name': 'Test 1', 'role': 'Testing Agent', 'instructions': 'Reply with one word: "Working".'})
+    with app.app_context():
+        db = get_db()
+        agent = db.execute('SELECT * FROM agents WHERE id = 1').fetchone()
+        assert agent['vendor'] == 'anthropic'
+        assert agent['model'] == 'claude-3-5-haiku-latest'
         assert agent['name'] == 'Test 1'
         assert agent['role'] == 'Testing Agent'
         assert agent['instructions'] == 'Reply with one word: "Working".'

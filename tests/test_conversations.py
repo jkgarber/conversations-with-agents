@@ -159,12 +159,28 @@ def test_agent_response(client, auth, app):
         db = get_db()
         count = db.execute('SELECT COUNT(id) FROM messages').fetchone()[0]
         assert count == 4
-        db.execute('UPDATE agents set instructions = ? WHERE id = 1', ('Reply with one word: "Successful"',))
-        db.execute('UPDATE messages set content = ? WHERE human = 0', ('Successful',))
+        db.execute('UPDATE agents SET instructions = ? WHERE id = 1', ('Reply with one word: "Successful"',))
+        db.execute('UPDATE messages SET content = ? WHERE human = 0', ('Successful',))
+        db.execute('DELETE FROM messages WHERE id > 3')
         db.commit()
     response = client.post('/conversations/1/agent-response')
     assert response.status_code == 200
     assert response.json == {'content': 'Successful'}
+    with app.app_context():
+        db = get_db()
+        count = db.execute('SELECT COUNT(id) FROM messages').fetchone()[0]
+        assert count == 4
+        db.execute('UPDATE agents SET vendor = ?, model = ? WHERE id = 1', ('anthropic', 'claude-3-5-haiku-latest'))
+        db.execute('DELETE FROM messages WHERE id > 3')
+        db.commit()
+    response = client.post('/conversations/1/agent-response')
+    assert response.status_code == 200
+    assert response.json == {'content': 'Successful'}
+    with app.app_context():
+        db = get_db()
+        count = db.execute('SELECT COUNT(id) FROM messages').fetchone()[0]
+        assert count == 4
+
 
 # Cannot test get_agent_response error handling until I can spoof the model for example. I havent figured out how to use the responses library to spoof the whole openai api response. Perhaps I need to refactor the way ai responses are being requrested in order to enable using the responses library.
 

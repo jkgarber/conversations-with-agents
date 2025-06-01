@@ -4,9 +4,10 @@ version = "0.0.4"
 description = "incontext but it's conversations with agents."
 dependencies = [
 	"flask",
+	"pytest",
 	"gunicorn",
 	"openai",
-	"pytest",
+	"anthropic",
 ]
 
 [build-system]

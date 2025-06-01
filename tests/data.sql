@@ -13,9 +13,9 @@ VALUES
 	(1, 'Working', 0),
 	(1, 'This is a test.', 1);
 
-INSERT INTO agents (model, name, role, instructions, creator_id, created)
+INSERT INTO agents (vendor, model, name, role, instructions, creator_id, created)
 VALUES
-	('gpt-4.1-mini', 'Test', 'Testing Agent', 'Reply with one word: "Working".', 2, '2025-01-01 00:00:00');
+	('openai', 'gpt-4.1-mini', 'Test', 'Testing Agent', 'Reply with one word: "Working".', 2, '2025-01-01 00:00:00');
 
 INSERT INTO conversation_agent_relations (conversation_id, agent_id)
 VALUES
