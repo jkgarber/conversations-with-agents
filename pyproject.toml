@@ -8,6 +8,7 @@ dependencies = [
 	"gunicorn",
 	"openai",
 	"anthropic",
+	"google-genai",
 ]
 
 [build-system]

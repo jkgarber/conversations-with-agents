@@ -180,6 +180,18 @@ def test_agent_response(client, auth, app):
         db = get_db()
         count = db.execute('SELECT COUNT(id) FROM messages').fetchone()[0]
         assert count == 4
+        db.execute('UPDATE agents SET vendor = ?, model = ? WHERE id = 1', ('google', 'gemini-1.5-flash-8b'))
+        db.execute('DELETE FROM messages WHERE id > 3')
+        db.commit()
+    response = client.post('/conversations/1/agent-response')
+    assert response.status_code == 200
+    response_content = response.json['content']
+    clean_response_content = ''.join(e for e in response_content if e.isalnum())
+    assert clean_response_content == 'Successful'
+    with app.app_context():
+        db = get_db()
+        count = db.execute('SELECT COUNT(id) FROM messages').fetchone()[0]
+        assert count == 4
 
 
 # Cannot test get_agent_response error handling until I can spoof the model for example. I havent figured out how to use the responses library to spoof the whole openai api response. Perhaps I need to refactor the way ai responses are being requrested in order to enable using the responses library.

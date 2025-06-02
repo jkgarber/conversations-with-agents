@@ -9,6 +9,8 @@ from incontext.agents import get_agents
 from incontext.agents import get_agent
 from openai import OpenAI
 import anthropic
+from google import genai
+from google.genai import types
 import os
 
 bp = Blueprint('conversations', __name__, url_prefix='/conversations')
@@ -213,14 +215,24 @@ def get_anthropic_response(conversation_history, agent):
         return dict(success=False, content=e)
 
 
+def get_google_response(conversation_history, agent):
+    google_api_key = get_credential('GEMINI_API_KEY')
+    client = genai.Client(api_key=google_api_key)
+    chat = client.chats.create(
+        model=agent['model'],
+        config=types.GenerateContentConfig(
+            system_instruction=f'You are a {agent["role"]}. {agent["instructions"]}'
+        ),
+        history=conversation_history[:-1]
+    )
+    try:
+        response = chat.send_message(conversation_history[-1]['parts'][0]['text'])
+        return dict(success=True, content=response.text)
+    except Exception as e:
+        return dict(success=False, content=e)
+
+
 def get_agent_response(cid):
-    conversation_history = []
-    messages = get_messages(cid)
-    for message in messages:
-        human = message['human']
-        role = 'user' if human == 1 else 'assistant'
-        content = message['content']
-        conversation_history.append(dict(role=role, content=content))
     agent_id = get_db().execute(
         'SELECT r.agent_id FROM conversation_agent_relations r'
         ' JOIN conversations c ON r.conversation_id = c.id'
@@ -229,10 +241,25 @@ def get_agent_response(cid):
     ).fetchone()['agent_id']
     agent = get_agent(agent_id)
     vendor = agent['vendor']
+    agent_conversation_role = 'model' if vendor == 'google' else 'assistant'
+    conversation_history = []
+    messages = get_messages(cid)
+    for message in messages:
+        human = message['human']
+        role = 'user' if human == 1 else agent_conversation_role
+        content = message['content']
+        if vendor == 'google':
+            parts = [{'text': content}]
+            conversation_history.append(dict(role=role, parts=parts))
+        else:
+            conversation_history.append(dict(role=role, content=content))
     if vendor == 'openai':
         return get_openai_response(conversation_history, agent)
-    else:
+    elif vendor == 'anthropic':
         return get_anthropic_response(conversation_history, agent)
+    else:
+        print(conversation_history)
+        return get_google_response(conversation_history, agent)
 
     
 @bp.route('/<int:conversation_id>/add-message', methods=('POST',))
