@@ -57,8 +57,10 @@ def create():
         else:
             if model in ['gpt-4.1-mini', 'gpt-4.1']:
                 vendor = 'openai'
-            else:
+            elif model in ['claude-3-5-haiku-latest', 'claude-3-7-sonnet-latest']:
                 vendor = 'anthropic'
+            else:
+                vendor = 'google'
             db = get_db()
             db.execute(
                 'INSERT INTO agents (model, name, role, instructions, creator_id, vendor)'
@@ -106,8 +108,10 @@ def update(id): # id corresponds to the <int:id> in the route. Flask will captur
         else:
             if model in ['gpt-4.1-mini', 'gpt-4.1']:
                 vendor = 'openai'
-            else:
+            elif model in ['claude-3-5-haiku-latest', 'claude-3-7-sonnet-latest']:
                 vendor = 'anthropic'
+            else:
+                vendor = 'google'
             db = get_db()
             db.execute(
                 'UPDATE agents SET model = ?, name = ?, role = ?, instructions = ?, vendor = ?'
